@@ -1,6 +1,8 @@
 package com.study.springboot.rabbitmq.config;
 
 import com.study.springboot.rabbitmq.constants.MessagingApplication;
+import com.study.springboot.rabbitmq.constants.RabbitConstants;
+import org.springframework.amqp.core.AcknowledgeMode;
 import org.springframework.amqp.core.DirectExchange;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
@@ -39,6 +41,15 @@ public class RabbitMQConfig {
         return factory;
     }
 
+    @Bean(RabbitConstants.BEAN_MANUAL_ACK)
+    public SimpleRabbitListenerContainerFactory myRabbitListenerManualAckContainerFactory() {
+        SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory());
+        factory.setMaxConcurrentConsumers(5);
+        factory.setAcknowledgeMode(AcknowledgeMode.MANUAL);
+        return factory;
+    }
+
     @Bean
     public ConnectionFactory connectionFactory() {
         CachingConnectionFactory connectionFactory = new CachingConnectionFactory(host);
@@ -60,9 +71,20 @@ public class RabbitMQConfig {
     }
 
     @Bean
-    public RabbitTemplate rabbitTemplate(final ConnectionFactory connectionFactory) {
+    public Queue appQueueManual() {
+        return new Queue(MessagingApplication.QUEUE_AMQP_MANUAL_ACK);
+    }
+
+    @Bean
+    public RabbitTemplate rabbitTemplateJson(final ConnectionFactory connectionFactory) {
         final RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         rabbitTemplate.setMessageConverter(producerJackson2MessageConverter());
+        return rabbitTemplate;
+    }
+
+    @Bean
+    public RabbitTemplate rabbitTemplate(final ConnectionFactory connectionFactory) {
+        final RabbitTemplate rabbitTemplate = new RabbitTemplate(connectionFactory);
         return rabbitTemplate;
     }
 

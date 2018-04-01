@@ -3,8 +3,10 @@ package com.study.springboot.rabbitmq;
 import com.rabbitmq.client.MessageProperties;
 import com.study.springboot.rabbitmq.constants.MessagingApplication;
 import com.study.springboot.rabbitmq.dto.AMQPMessage;
+import com.study.springboot.rabbitmq.serialization.ToBytes;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -37,4 +39,32 @@ public class Application {
         }
     }
 
+    @RequestMapping(value = "/send/custom", method = RequestMethod.POST)
+    public String sendQueue(@RequestParam("id") String id,
+                            @RequestParam("content") String content) {
+        try {
+            final AMQPMessage message = new AMQPMessage(id, content);
+            Message amqpMessage = MessageBuilder
+                    .withBody(ToBytes.serialize(message))
+                    .setDeliveryMode(MessageDeliveryMode.PERSISTENT)
+                    .build();
+
+            rabbitTemplate.convertAndSend(MessagingApplication.QUEUE_AMQP_MESSAGE, amqpMessage);
+            return "OK";
+        } catch (Exception e) {
+            return "NOK";
+        }
+    }
+
+    @RequestMapping(value = "/send/manual", method = RequestMethod.POST)
+    public String sendQueueManual(@RequestParam("id") String id,
+                                  @RequestParam("content") String content) {
+        try {
+            final AMQPMessage message = new AMQPMessage(id, content);
+            rabbitTemplate.convertAndSend(MessagingApplication.QUEUE_AMQP_MANUAL_ACK, message);
+            return "OK";
+        } catch (Exception e) {
+            return "NOK";
+        }
+    }
 }
